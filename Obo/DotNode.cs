@@ -5,25 +5,21 @@ namespace Obo
 {
     public class DotNode
     {
-        private readonly string          _fromName;
-        public readonly  HashSet<string> ToNames;
+        public readonly string        Name;
+        public readonly List<DotNode> Children = new List<DotNode>();
+        public readonly List<DotNode> Parents  = new List<DotNode>();
 
-        public DotNode(string fromName)
-        {
-            _fromName = fromName;
-            ToNames   = new HashSet<string>();
-        }
+        public Status Status;
+
+        public DotNode(string name) => Name = name;
 
         public override string ToString()
         {
-            List<string> toNames = ToNames.ToList();
-            if (toNames.Count == 1) return $"\t\"{_fromName}\" -> \"{toNames[0]}\";";
+            List<string> childNames = (from childNode in Children where childNode.Status != Status.Pruned select $"\"{childNode.Name}\"").ToList();
+            if (childNames.Count == 0) return null;
 
-            var newToNames = new List<string>();
-            foreach (string toName in toNames) newToNames.Add($"\"{toName}\"");
-
-            string joinedNames = string.Join(", ", newToNames);
-            return $"\t\"{_fromName}\" -> {{ {joinedNames} }};";
+            string       joinedNames = string.Join(", ", childNames);
+            return $"\t\"{Name}\" -> {{ {joinedNames} }};";
         }
     }
 }

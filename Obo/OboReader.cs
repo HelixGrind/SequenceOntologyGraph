@@ -26,7 +26,7 @@ namespace Obo
 
             if (line == "[Typedef]") return null;
 
-            if (line != "[Term]") throw new ApplicationException(line);
+            if (line != "[Term]") throw new InvalidDataException(line);
 
             string name       = null;
             string id         = null;

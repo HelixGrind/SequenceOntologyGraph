@@ -19,11 +19,15 @@ namespace Obo
             _writer.Close();
         }
 
-        public void WriteMissingNode(string nodeName) => _writer.WriteLine("\t\"{0}\" [style=filled, fillcolor=salmon];", nodeName);
+        public void WriteColoredNode(string nodeName, string color) =>
+            _writer.WriteLine($"\t\"{nodeName}\" [style=filled, fillcolor=\"{color}\", fontname=\"Ebrima\"];");
 
-        public void WriteFoundNode(string nodeName) => _writer.WriteLine("\t\"{0}\" [style=filled, fillcolor=palegreen];", nodeName);
-
-        public void Write(DotNode dotNode) => _writer.WriteLine(dotNode);
+        public void Write(DotNode dotNode)
+        {
+            var nodeString = dotNode.ToString();
+            if (nodeString == null) return;
+            _writer.WriteLine(nodeString);
+        }
 
         public void Dispose()
         {

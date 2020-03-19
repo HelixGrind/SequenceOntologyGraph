@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Obo
 {
@@ -7,18 +6,21 @@ namespace Obo
     {
         private static void Main(string[] args)
         {
-            if (args.Length != 3)
+            if (args.Length != 4)
             {
-                Console.WriteLine($"{Utilities.GetProgramName()} <input obo path> <output dot path> <root term>");
+                Console.WriteLine($"{Utilities.GetProgramName()} <input obo path> <output dot path> <root term> <pruned Y/N>");
                 Environment.Exit(1);
             }
 
             string inputPath  = args[0];
             string outputPath = args[1];
             string rootTerm   = args[2];
+            bool   pruned     = args[3].ToLower().StartsWith("y");
 
-            IDictionary<string, DotNode> termNameToNode = OboParser.Load(inputPath);
-            OboWriter.Write(termNameToNode, outputPath, rootTerm);
+            DotNode rootNode = OboParser.Load(inputPath, rootTerm);
+            if (pruned) Pruner.PruneLevels(rootNode);
+            Statistics.CalculateCoverage(rootNode);
+            OboWriter.Write(rootNode, outputPath);
         }
     }
 }

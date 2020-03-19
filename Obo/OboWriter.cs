@@ -1,117 +1,59 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 
 namespace Obo
 {
     public static class OboWriter
     {
-        public static void Write(IDictionary<string, DotNode> termNameToNode, string path, string rootTerm)
+        public static void Write(DotNode rootNode, string path)
         {
             Console.Write("- writing dot file... ");
 
-            var             visitedNames       = new HashSet<string>();
-            HashSet<string> supportedTermNames = GetSupportedConsequences();
-
-            CheckSupportedConsequences(termNameToNode, supportedTermNames);
-
+            var visitedNames = new HashSet<string>();
+            
             using (var writer = new DotWriter(path))
             {
-                DumpNodeList(writer, supportedTermNames, termNameToNode);
-                DumpRoot(rootTerm, writer, visitedNames, termNameToNode);
+                rootNode.DumpNodeColoring(writer, visitedNames);
+                visitedNames.Clear();
+                rootNode.Dump(writer, visitedNames);
             }
 
             Console.WriteLine("finished.");
         }
 
-        private static void CheckSupportedConsequences(IDictionary<string, DotNode> termNameToNode,
-                                                       IEnumerable<string> supportedTermNames)
+        private const string LightGreen = "#D6ECD2";
+        private const string DarkGreen  = "#99D18F";
+        private const string White      = "#FFFFFF";
+
+        private static void DumpNodeColoring(this DotNode node, DotWriter writer, ISet<string> visitedNames)
         {
-            var foundError = false;
+            if (visitedNames.Contains(node.Name)) return;
+            visitedNames.Add(node.Name);
 
-            foreach (string termName in supportedTermNames)
+            switch (node.Status)
             {
-                if (termNameToNode.ContainsKey(termName)) continue;
-                Console.WriteLine($"ERROR: Found unknown term name ({termName})");
-                foundError = true;
+                case Status.Covered:
+                    writer.WriteColoredNode(node.Name, LightGreen);
+                    break;
+                case Status.Supported:
+                    writer.WriteColoredNode(node.Name, DarkGreen);
+                    break;
+                default:
+                    writer.WriteColoredNode(node.Name, White);
+                    break;
             }
 
-            if (foundError)
-            {
-                throw new InvalidDataException("Found unknown supported consequences.");
-            }
+            foreach (DotNode childNode in node.Children) childNode.DumpNodeColoring(writer, visitedNames);
         }
 
-        private static HashSet<string> GetSupportedConsequences() =>
-            new HashSet<string>
-            {
-                "coding_sequence_variant",
-                "copy_number_change",
-                "copy_number_decrease",
-                "copy_number_increase",
-                "downstream_gene_variant",
-                "feature_elongation",
-                "5_prime_UTR_variant",
-                "frameshift_variant",
-                "incomplete_terminal_codon_variant",
-                "inframe_deletion",
-                "inframe_insertion",
-                "intron_variant",
-                "mature_miRNA_variant",
-                "missense_variant",
-                "NMD_transcript_variant",
-                "non_coding_transcript_exon_variant",
-                "non_coding_transcript_variant",
-                "protein_altering_variant",
-                "regulatory_region_ablation",
-                "regulatory_region_amplification",
-                "regulatory_region_variant",
-                "short_tandem_repeat_change",
-                "short_tandem_repeat_contraction",
-                "short_tandem_repeat_expansion",
-                "splice_acceptor_variant",
-                "splice_donor_variant",
-                "splice_region_variant",
-                "start_lost",
-                "start_retained_variant",
-                "stop_gained",
-                "stop_lost",
-                "stop_retained_variant",
-                "synonymous_variant",
-                "3_prime_UTR_variant",
-                "transcript_ablation",
-                "transcript_amplification",
-                "feature_truncation", // transcript_truncation
-                "transcript_variant",
-                "unidirectional_gene_fusion",
-                "upstream_gene_variant"
-            };
-
-        private static void DumpNodeList(DotWriter writer, IEnumerable<string> supportedTermNames,
-                                         IDictionary<string, DotNode> termNameToNode)
+        private static void Dump(this DotNode node, DotWriter writer, ISet<string> visitedNames)
         {
-            foreach (string termName in supportedTermNames)
-            {
-                if (termNameToNode.ContainsKey(termName)) writer.WriteFoundNode(termName);
-                else writer.WriteMissingNode(termName);
-            }
-        }
-
-        private static void DumpRoot(string rootName, DotWriter writer, ISet<string> visitedNames,
-                                     IDictionary<string, DotNode> termNameToNode)
-        {
-            if (visitedNames.Contains(rootName)) return;
-
-            if (!termNameToNode.TryGetValue(rootName, out DotNode node))
-            {
-                throw new InvalidDataException($"Unable to find {rootName}");
-            }
-
-            visitedNames.Add(rootName);
-
-            if (node.ToNames.Count != 0) writer.Write(node);
-
-            foreach (string childName in node.ToNames) DumpRoot(childName, writer, visitedNames, termNameToNode);
+            if (node.Status == Status.Pruned || visitedNames.Contains(node.Name)) return;
+            visitedNames.Add(node.Name);
+            
+            writer.Write(node);
+            foreach (DotNode childNode in node.Children)
+                if (childNode.Status != Status.Pruned) childNode.Dump(writer, visitedNames);
         }
     }
 }
