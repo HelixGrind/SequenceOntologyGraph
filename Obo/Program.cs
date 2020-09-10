@@ -20,7 +20,7 @@ namespace Obo
             DotNode rootNode = OboParser.Load(inputPath, rootTerm);
             if (pruned) Pruner.PruneLevels(rootNode);
             Statistics.CalculateCoverage(rootNode);
-            OboWriter.Write(rootNode, outputPath);
+            OboWriter.Write(rootNode, outputPath, pruned);
         }
     }
 }

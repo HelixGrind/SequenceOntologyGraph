@@ -5,7 +5,7 @@ namespace Obo
 {
     public static class OboWriter
     {
-        public static void Write(DotNode rootNode, string path)
+        public static void Write(DotNode rootNode, string path, bool pruned)
         {
             Console.Write("- writing dot file... ");
 
@@ -13,7 +13,7 @@ namespace Obo
             
             using (var writer = new DotWriter(path))
             {
-                rootNode.DumpNodeColoring(writer, visitedNames);
+                rootNode.DumpNodeColoring(writer, visitedNames, pruned);
                 visitedNames.Clear();
                 rootNode.Dump(writer, visitedNames);
             }
@@ -25,7 +25,8 @@ namespace Obo
         private const string DarkGreen  = "#99D18F";
         private const string White      = "#FFFFFF";
 
-        private static void DumpNodeColoring(this DotNode node, DotWriter writer, ISet<string> visitedNames)
+        private static void DumpNodeColoring(this DotNode node, DotWriter writer, ISet<string> visitedNames,
+                                             bool pruned)
         {
             if (visitedNames.Contains(node.Name)) return;
             visitedNames.Add(node.Name);
@@ -39,11 +40,11 @@ namespace Obo
                     writer.WriteColoredNode(node.Name, DarkGreen);
                     break;
                 default:
-                    writer.WriteColoredNode(node.Name, White);
+                    if (!pruned) writer.WriteColoredNode(node.Name, White);
                     break;
             }
 
-            foreach (DotNode childNode in node.Children) childNode.DumpNodeColoring(writer, visitedNames);
+            foreach (DotNode childNode in node.Children) childNode.DumpNodeColoring(writer, visitedNames, pruned);
         }
 
         private static void Dump(this DotNode node, DotWriter writer, ISet<string> visitedNames)
